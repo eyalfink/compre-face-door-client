@@ -3,6 +3,13 @@ import argparse
 import cv2
 import requests
 import time
+import click
+
+def send_open_command(args):
+  if args.use_server:
+    requests.post(args.use_server)
+  else:
+    click.MicrobitClicker().click()
 
 def watch(args):
   key = args.key
@@ -35,7 +42,7 @@ def watch(args):
     print(r.json())
     data = r.json()
     if 'result' in data and data['result'][0]['subjects'][0]['similarity'] > 0.99:
-      requests.post('http://localhost:7823')
+      send_open_command(args)
       time.sleep(5)
 
     time.sleep(0.2)
@@ -53,6 +60,9 @@ def main():
   parser = argparse.ArgumentParser()
   parser.add_argument('--key',
                       help='CfompreFace application key')
+  parser.add_argument('--use_server',
+                      default=None,
+                      help='if given will send request to the given address')
   parser.add_argument('--add', action='store_true',
                       help='Add new subjest')
   parser.add_argument('--name',
