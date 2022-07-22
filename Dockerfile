@@ -9,4 +9,4 @@ RUN pip --no-cache-dir install -r requirements.txt
 
 COPY pyclient pyclient
 
-CMD ["python", "pyclient/client.py"]
+ENTRYPOINT ["python", "pyclient/client.py"]
