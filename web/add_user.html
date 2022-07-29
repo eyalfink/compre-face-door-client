@@ -25,9 +25,14 @@
 
       });
 
-      function draw() {
-        ctx.drawImage(video, 0, 0, 640, 480);
-        canvas.toBlob(function (blob) {
+	function draw() {
+          ctx.translate(ctx.canvas.width * 0.5, ctx.canvas.height * 0.5);
+	  // rotate (uses radians)
+          ctx.rotate = 0.5 * Math.PI;
+	  // translate back as image is drawn from (0,0)
+          ctx.translate(-ctx.canvas.width * 0.5, -ctx.canvas.height * 0.5);
+          ctx.drawImage(video, 0, 0, 640, 480);
+          canvas.toBlob(function (blob) {
           blob.name = "blob.jpeg"
           let fd = new FormData();
           fd.append('file', blob, "blob.jpeg");
@@ -75,7 +80,7 @@
 </head>
 <body>
   <label for="user">New User:</label><input id="user" />
-  <label for="apiKey">API key:</label><input id="apiKey" value="656b502c-e6a2-49f3-9124-d2bcd36f29d4"/>
+  <label for="apiKey">API key:</label><input id="apiKey" value="d77722a8-96ab-4d98-b83d-2bfc90d95bb2"/>
   <button onclick="video()">video</button>
   <button onclick="stop()">stop</button>
   <button onclick="start()">start</button>

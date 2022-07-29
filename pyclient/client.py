@@ -1,9 +1,13 @@
 
+import os
 import argparse
 import cv2
 import requests
 import time
 import click
+
+import logging
+logging.basicConfig(format='%(asctime)s %(message)s', level=logging.INFO)
 
 def send_open_command(args):
   if args.use_server:
@@ -16,7 +20,7 @@ def watch(args):
   if args.view:
     cv2.namedWindow("preview")
 
-  vc = cv2.VideoCapture(0)
+  vc = cv2.VideoCapture(1)
   vc.set(cv2.CAP_PROP_FRAME_WIDTH, 640)  # set new dimensionns to cam object (not cap)
   vc.set(cv2.CAP_PROP_FRAME_HEIGHT, 480)
 
@@ -28,9 +32,11 @@ def watch(args):
   frame_id = 0
   while rval:
     rval, frame = vc.read()
+    if args.rotate:
+      frame = cv2.rotate(frame, cv2.ROTATE_90_COUNTERCLOCKWISE)
     if args.view:
       cv2.imshow("preview", frame)
-      cv2.imwrite(f'/tmp/{frame_id}.jpg', frame)
+      cv2.imwrite(f'{frame_id}.jpg', frame)
 
     retval, bframe = cv2.imencode('.jpg', frame)
     files = {'file': ('blob.jpeg', bframe)}
@@ -39,12 +45,25 @@ def watch(args):
                         "x-api-key": key
                       },
                       files=files)
-    print(r.json())
+    logging.debug(r.json())
+    if (frame_id % 3000) == 0:
+      logging.info(f'frame: {frame_id}')
+    
     data = r.json()
-    if 'result' in data and data['result'][0]['subjects'][0]['similarity'] > 0.99:
-      send_open_command(args)
-      time.sleep(5)
-
+    face_detetced =  'result' in data
+    if face_detetced: 
+      logging.info(f'Face found on frame {frame_id}, {data}')
+      who = data['result'][0]['subjects'][0]['subject']
+      similarity = data['result'][0]['subjects'][0]['similarity']
+      if similarity > 0.99:
+        if not args.dontopen:
+          send_open_command(args)
+        logging.info(f'open door on frame {frame_id} for {who}')
+        time.sleep(5)
+      
+      fname = f'{who}-{similarity}-{frame_id}.jpg'
+      cv2.imwrite(os.path.join(args.img_log_dir, fname), frame)
+      
     time.sleep(0.2)
     frame_id += 1
 
@@ -69,6 +88,11 @@ def main():
                       help='New subjest name')
   parser.add_argument('--view', action='store_true',
                       help='Show stream')
+  parser.add_argument('--rotate', action='store_true',
+                      help='rotate the image')
+  parser.add_argument('--dontopen', action='store_true',
+                      help='just collect, dont open')
+  parser.add_argument('--img_log_dir', default='/tmp')
 
   args = parser.parse_args()
 
